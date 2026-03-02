@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -9,3 +9,5 @@ class Project:
     url: str
     budget: str
     source: str
+    content_hash: str = ""
+    notified_at: str | None = None

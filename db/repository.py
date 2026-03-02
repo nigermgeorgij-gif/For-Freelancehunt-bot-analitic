@@ -28,12 +28,28 @@ class ProjectRepository:
                 url TEXT,
                 budget TEXT,
                 source TEXT,
+                content_hash TEXT DEFAULT '',
+                notified_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
+        await self._migrate(db)
         await db.commit()
         logger.info("Database initialized")
+
+    @staticmethod
+    async def _migrate(db: aiosqlite.Connection) -> None:
+        cursor = await db.execute("PRAGMA table_info(projects)")
+        columns = {row[1] for row in await cursor.fetchall()}
+        if "content_hash" not in columns:
+            await db.execute(
+                "ALTER TABLE projects ADD COLUMN content_hash TEXT DEFAULT ''"
+            )
+        if "notified_at" not in columns:
+            await db.execute(
+                "ALTER TABLE projects ADD COLUMN notified_at TIMESTAMP"
+            )
 
     async def close(self) -> None:
         if self._db is not None:
@@ -50,13 +66,24 @@ class ProjectRepository:
         row = await cursor.fetchone()
         return row is not None
 
+    async def get_content_hash(self, external_id: str) -> str | None:
+        db = await self._get_db()
+        cursor = await db.execute(
+            "SELECT content_hash FROM projects WHERE external_id = ?",
+            (external_id,),
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            return None
+        return row[0] or ""
+
     async def save_project(self, project: Project) -> None:
         db = await self._get_db()
         await db.execute(
             """
             INSERT OR IGNORE INTO projects
-                (external_id, title, description, url, budget, source)
-            VALUES (?, ?, ?, ?, ?, ?)
+                (external_id, title, description, url, budget, source, content_hash, notified_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 project.external_id,
@@ -65,6 +92,27 @@ class ProjectRepository:
                 project.url,
                 project.budget,
                 project.source,
+                project.content_hash,
+                project.notified_at,
+            ),
+        )
+        await db.commit()
+
+    async def update_project(self, project: Project) -> None:
+        db = await self._get_db()
+        await db.execute(
+            """
+            UPDATE projects
+            SET title = ?, description = ?, budget = ?, content_hash = ?, notified_at = ?
+            WHERE external_id = ?
+            """,
+            (
+                project.title,
+                project.description,
+                project.budget,
+                project.content_hash,
+                project.notified_at,
+                project.external_id,
             ),
         )
         await db.commit()
@@ -72,7 +120,8 @@ class ProjectRepository:
     async def get_project(self, external_id: str) -> Project | None:
         db = await self._get_db()
         cursor = await db.execute(
-            "SELECT external_id, title, description, url, budget, source "
+            "SELECT external_id, title, description, url, budget, source, "
+            "content_hash, notified_at "
             "FROM projects WHERE external_id = ?",
             (external_id,),
         )
@@ -86,4 +135,6 @@ class ProjectRepository:
             url=row[3],
             budget=row[4],
             source=row[5],
+            content_hash=row[6] or "",
+            notified_at=row[7],
         )
