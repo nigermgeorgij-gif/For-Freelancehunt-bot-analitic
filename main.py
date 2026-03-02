@@ -38,7 +38,7 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(router)
 
-    parsers = []
+    parsers: list[FreelancehuntParser] = []
     if settings.freelancehunt_api_token:
         parsers.append(FreelancehuntParser(settings.freelancehunt_api_token))
         logger.info("Freelancehunt parser enabled")
@@ -48,9 +48,10 @@ async def main() -> None:
         )
 
     monitoring: MonitoringService | None = None
+    monitoring_task: asyncio.Task | None = None
 
     async def on_startup() -> None:
-        nonlocal monitoring
+        nonlocal monitoring, monitoring_task
         me = await bot.get_me()
         logger.info("Bot started: @%s", me.username)
 
@@ -70,20 +71,30 @@ async def main() -> None:
                 keywords=settings.keywords,
                 polling_interval=settings.polling_interval,
             )
-            asyncio.create_task(monitoring.start())
+            monitoring_task = asyncio.create_task(monitoring.start())
 
     async def on_shutdown() -> None:
         if monitoring:
             monitoring.stop()
+        if monitoring_task and not monitoring_task.done():
+            monitoring_task.cancel()
+            try:
+                await monitoring_task
+            except asyncio.CancelledError:
+                pass
         for parser in parsers:
             await parser.close()
+        await repository.close()
         logger.info("Bot stopped")
 
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
 
     logger.info("Starting polling…")
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling(bot)
+    except asyncio.CancelledError:
+        logger.info("Polling cancelled")
 
 
 if __name__ == "__main__":

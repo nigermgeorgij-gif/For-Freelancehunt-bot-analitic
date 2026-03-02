@@ -1,4 +1,5 @@
 import asyncio
+import html
 import logging
 from aiogram import Bot
 from db.models import Project
@@ -7,6 +8,9 @@ from parsers.base import BaseParser
 from bot.keyboards import project_keyboard
 
 logger = logging.getLogger(__name__)
+
+MAX_MESSAGE_LEN = 4000
+MIN_POLLING_INTERVAL = 60
 
 
 class MonitoringService:
@@ -24,26 +28,36 @@ class MonitoringService:
         self._parsers = parsers
         self._repository = repository
         self._keywords = [kw.lower() for kw in keywords]
-        self._polling_interval = polling_interval
+        self._polling_interval = max(polling_interval, MIN_POLLING_INTERVAL)
         self._running = False
+        self._lock = asyncio.Lock()
 
     def _matches_keywords(self, project: Project) -> bool:
         text = f"{project.title} {project.description}".lower()
         return any(kw in text for kw in self._keywords)
 
-    def _format_project(self, project: Project) -> str:
-        return (
-            f"🆕 <b>{project.title}</b>\n\n"
-            f"{project.description[:500]}\n\n"
-            f"💰 Budget: {project.budget}\n"
-            f"🔗 Source: {project.source}\n"
-            f"🌐 {project.url}"
+    @staticmethod
+    def _format_project(project: Project) -> str:
+        desc = html.escape(project.description[:500])
+        title = html.escape(project.title)
+        budget = html.escape(project.budget)
+        source = html.escape(project.source)
+        url = html.escape(project.url)
+        text = (
+            f"🆕 <b>{title}</b>\n\n"
+            f"{desc}\n\n"
+            f"💰 Budget: {budget}\n"
+            f"🔗 Source: {source}\n"
+            f"🌐 {url}"
         )
+        return text[:MAX_MESSAGE_LEN]
 
     async def _process_projects(self) -> None:
         for parser in self._parsers:
             try:
                 projects = await parser.fetch_projects()
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 logger.error("Parser error: %s", e)
                 continue
@@ -64,17 +78,22 @@ class MonitoringService:
                         parse_mode="HTML",
                         reply_markup=project_keyboard(project.external_id),
                     )
+                except asyncio.CancelledError:
+                    raise
                 except Exception as e:
                     logger.error("Failed to send message: %s", e)
-
-                await asyncio.sleep(0.5)
 
     async def start(self) -> None:
         self._running = True
         logger.info("Monitoring started (interval=%ds)", self._polling_interval)
-        while self._running:
-            await self._process_projects()
-            await asyncio.sleep(self._polling_interval)
+        try:
+            while self._running:
+                if not self._lock.locked():
+                    async with self._lock:
+                        await self._process_projects()
+                await asyncio.sleep(self._polling_interval)
+        except asyncio.CancelledError:
+            logger.info("Monitoring task cancelled")
 
     def stop(self) -> None:
         self._running = False

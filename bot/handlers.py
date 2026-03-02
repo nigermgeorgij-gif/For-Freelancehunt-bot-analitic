@@ -1,3 +1,4 @@
+import html
 import logging
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
@@ -7,6 +8,8 @@ from services.openai_service import OpenAIService
 logger = logging.getLogger(__name__)
 
 router = Router()
+
+MAX_MESSAGE_LEN = 4000
 
 _repository: ProjectRepository | None = None
 _openai_service: OpenAIService | None = None
@@ -55,7 +58,11 @@ async def on_generate_proposal(callback: CallbackQuery) -> None:
         project.title, project.description
     )
 
+    title = html.escape(project.title)
+    safe_proposal = html.escape(proposal)
+    text = f"📝 <b>Proposal for:</b> {title}\n\n{safe_proposal}"
+
     await callback.message.answer(
-        f"📝 <b>Proposal for:</b> {project.title}\n\n{proposal}",
+        text[:MAX_MESSAGE_LEN],
         parse_mode="HTML",
     )
