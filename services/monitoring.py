@@ -134,15 +134,16 @@ class MonitoringService:
                     project.external_id
                 )
                 is_update = False
+                now = datetime.now(timezone.utc).isoformat()
 
                 if existing_hash is None:
                     project.content_hash = content_hash
-                    project.notified_at = datetime.now(timezone.utc).isoformat()
+                    project.notified_at = now
                     await self._repository.save_project(project)
                     logger.info("NEW project detected: %s", project.external_id)
                 elif existing_hash != content_hash:
                     project.content_hash = content_hash
-                    project.notified_at = datetime.now(timezone.utc).isoformat()
+                    project.notified_at = now
                     await self._repository.update_project(project)
                     is_update = True
                     logger.info("UPDATED project detected: %s", project.external_id)
