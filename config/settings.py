@@ -16,9 +16,6 @@ class Settings:
     openai_api_key: str = field(
         default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
     )
-    freelancehunt_api_token: str = field(
-        default_factory=lambda: os.getenv("FREELANCEHUNT_API_TOKEN", "")
-    )
     database_path: str = field(
         default_factory=lambda: os.getenv("DATABASE_PATH", "projects.db")
     )
