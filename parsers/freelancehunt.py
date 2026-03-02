@@ -43,8 +43,8 @@ class FreelancehuntParser(BaseParser):
             except httpx.RequestError as e:
                 delay = 2 ** (attempt + 1)
                 logger.error(
-                    "Freelancehunt request error (attempt %d/%d): %s",
-                    attempt + 1, MAX_RETRIES, e,
+                    "Freelancehunt request error (attempt %d/%d): %s — retrying in %ds",
+                    attempt + 1, MAX_RETRIES, e, delay,
                 )
                 if attempt == MAX_RETRIES - 1:
                     return []
