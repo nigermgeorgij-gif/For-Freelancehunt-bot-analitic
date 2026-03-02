@@ -58,44 +58,43 @@ class FreelancehuntParser(BaseParser):
     def _parse_html(html: str) -> list[Project]:
         tree = HTMLParser(html)
         projects: list[Project] = []
+        seen_ids: set[str] = set()
 
-        for card in tree.css("div.project-card")[:MAX_PROJECTS]:
+        for link_node in tree.css('a[href*="/project/"]'):
+            if len(projects) >= MAX_PROJECTS:
+                break
             try:
-                link_node = card.css_first("a.project-card__title")
-                if link_node is None:
-                    continue
                 href = link_node.attributes.get("href", "")
-                title = link_node.text(strip=True)
+                if not href.endswith(".html"):
+                    continue
 
-                # extract numeric id from URL like /project/slug/1234567.html
-                external_id = ""
                 parts = href.rstrip("/").split("/")
+                external_id = ""
                 for part in reversed(parts):
                     clean = part.replace(".html", "")
                     if clean.isdigit():
                         external_id = clean
                         break
-                if not external_id:
+                if not external_id or external_id in seen_ids:
                     continue
 
+                title = link_node.text(strip=True)
+                if not title:
+                    continue
+                seen_ids.add(external_id)
+
                 url = href if href.startswith("http") else f"https://freelancehunt.com{href}"
-
-                desc_node = card.css_first("div.project-card__description")
-                description = desc_node.text(strip=True)[:500] if desc_node else ""
-
-                budget_node = card.css_first("div.project-card__budget")
-                budget = budget_node.text(strip=True) if budget_node else "N/A"
 
                 projects.append(Project(
                     external_id=external_id,
                     title=title,
-                    description=description,
+                    description="",
                     url=url,
-                    budget=budget,
+                    budget="N/A",
                     source="freelancehunt",
                 ))
             except Exception as e:
-                logger.error("Error parsing project card: %s", e)
+                logger.error("Error parsing project link: %s", e)
                 continue
 
         logger.info("Parsed %d projects from Freelancehunt", len(projects))
