@@ -66,11 +66,23 @@ class Settings:
         default_factory=lambda: os.getenv("LOG_LEVEL", "INFO")
     )
 
-    keywords: list[str] = field(default_factory=lambda: [
-        "python", "api", "shopify", "google merchant", "crm",
-        "automation", "dashboard", "django", "fastapi", "flask",
-        "telegram", "bot", "scraping", "parsing", "ai", "бот",
+    blacklist: list[str] = field(default_factory=lambda: [
+        "design", "figma", "photoshop", "logo", "banner",
+        "smm", "seo", "copywriting", "illustration", "3d", "motion",
     ])
+
+    whitelist: list[str] = field(default_factory=lambda: [
+        "python", "ai", "bot", "telegram", "automation",
+        "api", "parser", "scraping", "crm", "backend", "integration",
+    ])
+
+    priority_threshold: int = field(
+        default_factory=lambda: int(os.getenv("PRIORITY_THRESHOLD", "1"))
+    )
+
+    ignored_log_interval_hours: int = field(
+        default_factory=lambda: int(os.getenv("IGNORED_LOG_INTERVAL_HOURS", "6"))
+    )
 
     openai_system_prompt: str = field(default_factory=lambda: (
         "Ты пишешь отклик на фриланс-проект.\n"

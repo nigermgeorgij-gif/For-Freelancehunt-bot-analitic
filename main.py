@@ -62,8 +62,11 @@ async def main() -> None:
                 chat_id=settings.telegram_admin_chat_id,
                 parsers=parsers,
                 repository=repository,
-                keywords=settings.keywords,
+                blacklist=settings.blacklist,
+                whitelist=settings.whitelist,
                 polling_interval=settings.polling_interval,
+                priority_threshold=settings.priority_threshold,
+                ignored_log_interval_hours=settings.ignored_log_interval_hours,
             )
             monitoring_task = asyncio.create_task(monitoring.start())
 

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import httpx
@@ -9,6 +10,7 @@ from parsers.base import BaseParser
 logger = logging.getLogger(__name__)
 
 MAX_PROJECTS = 50
+MAX_RETRIES = 3
 FREELANCEHUNT_URL = "https://freelancehunt.com/projects"
 
 
@@ -17,9 +19,27 @@ class FreelancehuntParser(BaseParser):
         self._client = httpx.AsyncClient()
 
     async def fetch_projects(self) -> list[Project]:
-        response = await self._client.get(FREELANCEHUNT_URL)
-        response.raise_for_status()
-        return self._parse_html(response.text)
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = await self._client.get(FREELANCEHUNT_URL)
+                response.raise_for_status()
+                return self._parse_html(response.text)
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                if attempt < MAX_RETRIES - 1:
+                    delay = 2 ** (attempt + 1)
+                    logger.warning(
+                        "Freelancehunt fetch error (attempt %d/%d): %s — retrying in %ds",
+                        attempt + 1, MAX_RETRIES, e, delay,
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(
+                        "Freelancehunt fetch failed after %d attempts: %s",
+                        MAX_RETRIES, e,
+                    )
+        return []
 
     @staticmethod
     def _parse_html(html: str) -> list[Project]:
