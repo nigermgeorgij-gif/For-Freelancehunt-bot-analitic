@@ -38,14 +38,8 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(router)
 
-    parsers: list[FreelancehuntParser] = []
-    if settings.freelancehunt_api_token:
-        parsers.append(FreelancehuntParser(settings.freelancehunt_api_token))
-        logger.info("Freelancehunt parser enabled")
-    else:
-        logger.warning(
-            "FREELANCEHUNT_API_TOKEN not set — Freelancehunt parser disabled"
-        )
+    parsers: list[FreelancehuntParser] = [FreelancehuntParser()]
+    logger.info("Freelancehunt parser enabled")
 
     monitoring: MonitoringService | None = None
     monitoring_task: asyncio.Task | None = None
