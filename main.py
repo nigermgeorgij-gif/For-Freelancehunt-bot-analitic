@@ -54,14 +54,17 @@ async def main() -> None:
         me = await bot.get_me()
         logger.info("Bot started: @%s", me.username)
 
+        if not settings.telegram_admin_chat_id:
+            logger.warning(
+                "TELEGRAM_ADMIN_CHAT_ID not set — monitoring disabled. "
+                "Send /start to the bot and set your chat ID in .env"
+            )
+            return
+
         if parsers:
-            # Use the bot owner's chat; in production, store admin chat_id in config
             monitoring = MonitoringService(
                 bot=bot,
-                chat_id=int(
-                    # First message sender or fallback to bot id
-                    me.id
-                ),
+                chat_id=settings.telegram_admin_chat_id,
                 parsers=parsers,
                 repository=repository,
                 keywords=settings.keywords,

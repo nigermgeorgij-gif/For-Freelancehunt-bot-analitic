@@ -23,9 +23,11 @@ async def cmd_start(message: Message) -> None:
     await message.answer(
         "👋 Freelance Monitor Bot\n\n"
         "I monitor freelance platforms and send matching projects.\n\n"
+        f"Your chat ID: <code>{message.chat.id}</code>\n\n"
         "Commands:\n"
         "/start — Show this message\n"
-        "/status — Bot status"
+        "/status — Bot status",
+        parse_mode="HTML",
     )
 
 
