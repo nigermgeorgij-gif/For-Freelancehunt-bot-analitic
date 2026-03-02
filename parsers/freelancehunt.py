@@ -26,7 +26,6 @@ class FreelancehuntParser(BaseParser):
                 response = await self._client.get(FREELANCEHUNT_API_URL)
                 response.raise_for_status()
                 data = response.json()
-                del response
                 return self._parse_response(data)
             except httpx.HTTPStatusError as e:
                 logger.error(

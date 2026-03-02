@@ -45,7 +45,6 @@ class OpenAIService:
                     temperature=0.7,
                 )
                 content = response.choices[0].message.content
-                del response
                 return content or "Failed to generate proposal."
             except asyncio.CancelledError:
                 raise

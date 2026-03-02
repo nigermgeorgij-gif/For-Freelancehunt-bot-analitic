@@ -88,9 +88,8 @@ class MonitoringService:
         logger.info("Monitoring started (interval=%ds)", self._polling_interval)
         try:
             while self._running:
-                if not self._lock.locked():
-                    async with self._lock:
-                        await self._process_projects()
+                async with self._lock:
+                    await self._process_projects()
                 await asyncio.sleep(self._polling_interval)
         except asyncio.CancelledError:
             logger.info("Monitoring task cancelled")
