@@ -22,6 +22,18 @@ SCORE_KEYWORDS_ANY = {"бот": 1, "automation": 1}
 SCORE_BUDGET_THRESHOLD = 10000
 SCORE_BUDGET_POINTS = 2
 
+BLACKLIST_WORDS = [
+    "design", "figma", "photoshop", "logo", "banner",
+    "smm", "seo", "copywriting", "illustration", "3d",
+    "motion", "ui design",
+]
+
+WHITELIST_WORDS = [
+    "python", "ai", "bot", "telegram", "automation",
+    "api", "парсер", "scraping", "crm", "backend",
+    "integration",
+]
+
 
 class MonitoringService:
     def __init__(
@@ -45,6 +57,16 @@ class MonitoringService:
     def _matches_keywords(self, project: Project) -> bool:
         text = f"{project.title} {project.description}".lower()
         return any(kw in text for kw in self._keywords)
+
+    @staticmethod
+    def _is_blacklisted(project: Project) -> bool:
+        text = f"{project.title} {project.description}".lower()
+        return any(word in text for word in BLACKLIST_WORDS)
+
+    @staticmethod
+    def _matches_whitelist(project: Project) -> bool:
+        text = f"{project.title} {project.description}".lower()
+        return any(word in text for word in WHITELIST_WORDS)
 
     @staticmethod
     def _compute_content_hash(project: Project) -> str:
@@ -118,6 +140,19 @@ class MonitoringService:
 
             for project in projects:
                 if not self._matches_keywords(project):
+                    continue
+
+                if self._is_blacklisted(project):
+                    logger.info(
+                        "Project ignored (blacklisted): %s", project.external_id
+                    )
+                    continue
+
+                if not self._matches_whitelist(project):
+                    logger.info(
+                        "Project ignored (no whitelist match): %s",
+                        project.external_id,
+                    )
                     continue
 
                 content_hash = self._compute_content_hash(project)

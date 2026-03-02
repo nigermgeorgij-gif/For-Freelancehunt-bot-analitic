@@ -36,8 +36,9 @@ class OpenAIService:
                         {
                             "role": "user",
                             "content": (
-                                f"Project title: {project_title}\n\n"
-                                f"Project description: {description}"
+                                f"Вот описание проекта:\n"
+                                f"Title: {project_title}\n\n"
+                                f"{description}"
                             ),
                         },
                     ],
