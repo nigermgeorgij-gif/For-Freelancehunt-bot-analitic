@@ -4,6 +4,46 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+PROFILE_CONTEXT = """
+Специализация: AI Product Engineer / Python интегратор
+
+Основной стек:
+
+Python (asyncio, aiogram, automation)
+
+OpenAI API
+
+Telegram bots
+
+HTML parsing (selectolax)
+
+REST API
+
+CRM automation
+
+Supabase
+
+PDF generation
+
+Опыт:
+
+AI-воронки
+
+CRM интеграции
+
+Мониторинг-боты
+
+Автоматизация бизнес-процессов
+
+Подход:
+
+Быстрая реализация
+
+Чистая архитектура
+
+Фокус на бизнес-результат
+"""
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -33,10 +73,13 @@ class Settings:
     ])
 
     openai_system_prompt: str = field(default_factory=lambda: (
-        "You are an experienced freelance developer. "
-        "Write a concise, professional proposal for the given project. "
-        "Highlight relevant skills and experience. "
-        "Keep it under 150 words. Be specific to the project requirements."
+        "Ты пишешь отклик на фриланс-проект.\n"
+        f"Вот профиль специалиста:\n{PROFILE_CONTEXT}\n"
+        "Напиши краткий, уверенный отклик.\n"
+        "Не выдумывай опыт.\n"
+        "Используй только стек из профиля.\n"
+        "Без воды.\n"
+        "До 1200 символов."
     ))
 
 
