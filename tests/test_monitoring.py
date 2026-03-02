@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from db.models import Project
-from services.monitoring import MonitoringService
+from services.monitoring import MonitoringService, MAX_MESSAGE_LEN
 
 
 def _make_project(**kwargs):
@@ -92,6 +92,10 @@ class TestScoring:
         p = _make_project(title="AI Bot", description="python automation")
         score = MonitoringService._calculate_score(p, 15000)
         assert score >= 3
+
+    def test_cyrillic_bot_scores_1(self):
+        p = _make_project(title="Нужен бот", description="")
+        assert MonitoringService._calculate_score(p, 0) == 1
 
     def test_zero_score(self):
         p = _make_project(title="Unknown", description="nothing relevant")
@@ -289,4 +293,4 @@ class TestFormatProject:
     def test_message_truncated(self):
         p = _make_project(description="x" * 5000)
         msg = MonitoringService._format_project(p, "label")
-        assert len(msg) <= 4000
+        assert len(msg) <= MAX_MESSAGE_LEN
