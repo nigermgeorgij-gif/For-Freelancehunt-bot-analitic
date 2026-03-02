@@ -29,7 +29,7 @@ class Settings:
     keywords: list[str] = field(default_factory=lambda: [
         "python", "api", "shopify", "google merchant", "crm",
         "automation", "dashboard", "django", "fastapi", "flask",
-        "telegram", "bot", "scraping", "parsing",
+        "telegram", "bot", "scraping", "parsing", "ai", "бот",
     ])
 
     openai_system_prompt: str = field(default_factory=lambda: (
